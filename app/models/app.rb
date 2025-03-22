@@ -10,6 +10,8 @@ class App < ApplicationRecord
 
   scope :all_names, -> { all.map { |c| [c.name, c.id] } }
   scope :debug_files, -> { joins(:debug_files).distinct }
+  scope :archived, -> { where(archived: true) }
+  scope :active, -> { where(archived: false) }
 
   validates :name, presence: true
 
@@ -99,6 +101,14 @@ class App < ApplicationRecord
 
   def collaborator_user_ids
     collaborators.select(:user_id).map(&:user_id)
+  end
+
+  def archive!
+    update!(archived: true)
+  end
+
+  def unarchive!
+    update!(archived: false)
   end
 
   private

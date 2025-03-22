@@ -9,6 +9,7 @@ ruby:
         = f.error_notification
 
         = f.input :name, required: true
+        = f.input :archived, as: :boolean, label: "Archived"
         - if new_or_create_route?
           = f.simple_fields_for :scheme_attributes do |n|
             = n.input :name, as: :check_boxes, collection: preset_schemes, checked: schemes, required: false

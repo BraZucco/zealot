@@ -2,14 +2,14 @@
 
 class AppsController < ApplicationController
   before_action :authenticate_user! unless Setting.guest_mode
-  before_action :set_app, only: %i[show edit update destroy new_owner update_owner]
+  before_action :set_app, only: %i[show edit update destroy new_owner update_owner archive unarchive]
   before_action :set_selected_schemes_and_channels, only: %i[edit]
   before_action :process_scheme_and_channel, only: %i[create]
   before_action :set_owner, only: %i[ new_owner update_owner ]
 
   def index
     @title = t('.title')
-    @apps = manage_user_or_guest_mode? ? App.all : current_user.apps.all
+    @apps = manage_user_or_guest_mode? ? App.active : current_user.apps.all
     authorize @apps if @app.present?
   end
 
@@ -87,6 +87,54 @@ class AppsController < ApplicationController
       format.html { redirect_to @app }
       format.turbo_stream
     end
+  end
+
+  def archive
+    authorize @app, :archive?
+    @apps = manage_user_or_guest_mode? ? App.active : current_user.apps.active
+    
+    if @app.update(archived: true)
+      respond_to do |format|
+        format.html { redirect_to apps_path, notice: t('apps.archived.success') }
+        format.turbo_stream do
+          flash.now[:notice] = t('apps.archived.success')
+      
+          render turbo_stream: [
+            turbo_stream.replace('notifications', partial: 'layouts/messages'),
+            turbo_stream.replace('apps_list', partial: 'apps/app_list', locals: { apps: @apps })
+          ]
+        end
+      end
+    else
+      redirect_to apps_path(@app), alert: t('apps.archived.error')
+    end
+  end
+
+  def unarchive
+    authorize @app, :unarchive?
+    @apps = manage_user_or_guest_mode? ? App.archived : current_user.apps.active
+
+    if @app.update(archived: false)
+      respond_to do |format|
+        format.html { redirect_to apps_path, notice: t('apps.unarchived.success') }
+        format.turbo_stream do
+          flash.now[:notice] = t('apps.unarchived.success')
+      
+          render turbo_stream: [
+            turbo_stream.replace('notifications', partial: 'layouts/messages'),
+            turbo_stream.replace('apps_list', partial: 'apps/app_list', locals: { apps: @apps })
+          ]
+        end
+      end
+    else
+      redirect_to apps_path(@app), alert: t('apps.unarchived.error')
+    end
+  end
+
+  def archived
+    @title = "Archived Apps"
+    @apps = manage_user_or_guest_mode? ? App.archived : current_user.apps.active
+    authorize @apps if @apps.present?
   end
 
   private

@@ -33,6 +33,18 @@ class AppPolicy < ApplicationPolicy
     admin?|| app_owner?
   end
 
+  def archive?
+    user.admin? || user.manage?
+  end
+
+  def unarchive?
+    user.admin? || user.manage?
+  end
+
+  def archived?
+    user.admin? || user.manage?
+  end
+
   class Scope < Scope
     def resolve
       scope.all
